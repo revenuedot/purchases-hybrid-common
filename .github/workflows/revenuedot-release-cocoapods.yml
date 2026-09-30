@@ -1,0 +1,97 @@
+# RevenueDot fork: publish RevenueDotPurchasesHybridCommon and RevenueDotPurchasesHybridCommonUI
+# to CocoaPods trunk. Runs on release tags <version>-revenuedot cut from revenuedot/release-<version>.
+# The pods depend on RevenueDotPurchases / RevenueDotPurchasesUI from revenuedot/purchases-ios,
+# so this waits until the pinned iOS version is live on trunk.
+# npm packages are released by revenuedot-release.yml. Not part of upstream RevenueCat;
+# kept as a plain commit on the fork branches. Fork pipeline: https://github.com/revenuedot/revenuedot/tree/main/scripts/forks
+name: RevenueDot release (CocoaPods)
+
+on:
+  push:
+    tags: ["*-revenuedot"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to publish, e.g. 19.4.1-revenuedot"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: revenuedot-cocoapods-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  cocoapods:
+    runs-on: macos-15
+    environment: production
+    timeout-minutes: 240
+    env:
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
+      XCODE_VERSION: "16.4"
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+      PODS: "RevenueDotPurchasesHybridCommon RevenueDotPurchasesHybridCommonUI"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.TAG }}
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app"
+          xcodebuild -version
+          pod --version
+
+      - name: Check the tag matches the podspec versions
+        run: |
+          case "$TAG" in *-revenuedot) ;; *) echo "::error::Tag $TAG must be <version>-revenuedot"; exit 1 ;; esac
+          want="${TAG%-revenuedot}"
+          [ "$(tr -d '[:space:]' < .version)" = "$want" ] || { echo "::error::.version is $(cat .version), tag says $want"; exit 1; }
+          for pod in $PODS; do
+            json="$(pod ipc spec "$pod.podspec")"
+            v="$(echo "$json" | jq -r .version)"; t="$(echo "$json" | jq -r .source.tag)"
+            echo "$pod: version $v, source tag $t, module $(echo "$json" | jq -r .module_name), deps $(echo "$json" | jq -c .dependencies)"
+            [ "$v" = "$want" ] || { echo "::error::$pod.podspec version is $v, tag says $want"; exit 1; }
+            [ "$t" = "$TAG" ] || { echo "::error::$pod.podspec source tag is $t, expected $TAG"; exit 1; }
+          done
+
+      - name: Wait for the pinned RevenueDot iOS pods on trunk
+        run: |
+          deps="$(for pod in $PODS; do pod ipc spec "$pod.podspec" | jq -r '.dependencies | to_entries[] | select(.key | test("^RevenueDotPurchases(UI)?$")) | "\(.key) \(.value[0])"'; done | sort -u)"
+          [ -n "$deps" ] || { echo "::error::no RevenueDotPurchases dependency found in the podspecs"; exit 1; }
+          echo "$deps" | while read -r name version; do
+            for i in $(seq 1 60); do
+              code="$(curl -s -o /dev/null -w '%{http_code}' "https://trunk.cocoapods.org/api/v1/pods/$name/versions/$version")"
+              [ "$code" = "200" ] && { echo "$name $version is on trunk"; break; }
+              [ "$i" = 60 ] && { echo "::error::$name $version is not on trunk after 60 minutes; publish tag $version-revenuedot in revenuedot/purchases-ios first"; exit 1; }
+              echo "Waiting for $name $version on trunk (HTTP $code)"; sleep 60
+            done
+          done
+
+      # Lints both pods on every platform before anything is published, so a failure cannot
+      # leave the core pod on trunk without the UI pod. Retries cover CocoaPods CDN lag.
+      # This is the build step: each lint compiles the pod for iOS, macOS, tvOS and visionOS.
+      - name: Lint podspecs
+        run: |
+          lint() { for attempt in 1 2 3 4 5; do pod lib lint "$@" && return 0; echo "Lint failed (attempt $attempt); retrying in 120 s"; sleep 120; pod repo update --silent || true; done; return 1; }
+          lint RevenueDotPurchasesHybridCommon.podspec --allow-warnings --fail-fast
+          lint RevenueDotPurchasesHybridCommonUI.podspec --allow-warnings --fail-fast --include-podspecs=RevenueDotPurchasesHybridCommon.podspec
+
+      - name: Push to CocoaPods trunk
+        env:
+          COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
+        run: |
+          version="${TAG%-revenuedot}"
+          on_trunk() { [ "$(curl -s -o /dev/null -w '%{http_code}' "https://trunk.cocoapods.org/api/v1/pods/$1/versions/$version")" = "200" ]; }
+          for pod in $PODS; do
+            if on_trunk "$pod"; then echo "$pod $version is already on trunk, skipping"; continue; fi
+            # The UI pod resolves RevenueDotPurchasesHybridCommon from trunk, which can lag a few minutes behind a push.
+            for attempt in 1 2 3 4 5 6; do
+              if pod trunk push "$pod.podspec" --allow-warnings --synchronous; then break; fi
+              if on_trunk "$pod"; then break; fi
+              [ "$attempt" = 6 ] && { echo "::error::pod trunk push $pod failed 6 times"; exit 1; }
+              echo "Push of $pod failed (attempt $attempt); retrying in 120 s"; sleep 120
+            done
+          done
