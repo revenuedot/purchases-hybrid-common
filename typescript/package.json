@@ -1,8 +1,8 @@
 {
-  "name": "@revenuecat/purchases-typescript-internal",
+  "name": "@revenuedot/purchases-typescript-internal",
   "title": "Purchases typescript internal shared code",
   "version": "19.4.1",
-  "description": "Typescript code to be used by RevenueCat's hybrid SDKs. Not meant for external usage.",
+  "description": "Typescript code to be used by RevenueCat's hybrid SDKs. Not meant for external usage. (Fork of RevenueCat's MIT SDK, maintained by RevenueDot, not affiliated with RevenueCat.)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "source": "src/index",
@@ -19,17 +19,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RevenueCat/purchases-hybrid-common.git"
+    "url": "git+https://github.com/revenuedot/purchases-hybrid-common.git"
   },
   "keywords": [
     "RevenueCat"
   ],
-  "author": "RevenueCat, Inc.",
+  "author": "RevenueDot (https://revenuedot.app)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/RevenueCat/purchases-hybrid-common/issues"
+    "url": "https://github.com/revenuedot/purchases-hybrid-common/issues"
   },
-  "homepage": "https://github.com/RevenueCat/purchases-hybrid-common#readme",
+  "homepage": "https://github.com/revenuedot/purchases-hybrid-common#readme",
   "packageManager": "yarn@1.22.22",
   "devDependencies": {
     "@microsoft/api-extractor": "^7.43.1",

@@ -1,0 +1,18 @@
+{
+  "note": "Fork of RevenueCat's MIT SDK, maintained by RevenueDot, not affiliated with RevenueCat.",
+  "pipeline": "https://github.com/revenuedot/revenuedot/tree/main/scripts/forks",
+  "rules": "scripts/forks/rules/purchases-hybrid-common.json",
+  "rulesSha256": "5483ac87d78c506641f6569a9791b865c6fd813898bfdb4805a49fa9058d7f13",
+  "upstream": {
+    "repo": "https://github.com/RevenueCat/purchases-hybrid-common",
+    "mergeBase": "420ac7394173868bede3ec10796addd316fc1be6"
+  },
+  "apiHost": "https://api.revenuedot.app",
+  "signingPublicKey": "gXdn2hmqR/TbdtQwK02laE0YgFz0Rtf918LICLrgZhg=",
+  "publishes": [
+    "CocoaPods RevenueDotPurchasesHybridCommon (module PurchasesHybridCommon), RevenueDotPurchasesHybridCommonUI (module PurchasesHybridCommonUI)",
+    "SPM https://github.com/revenuedot/purchases-hybrid-common, tags <version>-revenuedot",
+    "Maven Central app.revenuedot.purchases:purchases-hybrid-common, -ui, -store-galaxy",
+    "npm @revenuedot/purchases-typescript-internal, @revenuedot/purchases-typescript-internal-esm, @revenuedot/purchases-js-hybrid-mappings"
+  ]
+}

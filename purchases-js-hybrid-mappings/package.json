@@ -1,21 +1,21 @@
 {
-  "name": "@revenuecat/purchases-js-hybrid-mappings",
+  "name": "@revenuedot/purchases-js-hybrid-mappings",
   "version": "19.4.1",
-  "description": "RevenueCat's JavaScript hybrid mappings for purchases-js",
+  "description": "RevenueCat's JavaScript hybrid mappings for purchases-js (Fork of RevenueCat's MIT SDK, maintained by RevenueDot, not affiliated with RevenueCat.)",
   "main": "dist/index.js",
   "browser": "dist/index.umd.js",
   "type": "module",
   "files": [
     "dist"
   ],
-  "author": "RevenueCat, Inc.",
+  "author": "RevenueDot (https://revenuedot.app)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RevenueCat/purchases-hybrid-common.git"
+    "url": "git+https://github.com/revenuedot/purchases-hybrid-common.git"
   },
   "bugs": {
-    "url": "https://github.com/RevenueCat/purchases-hybrid-common/issues"
+    "url": "https://github.com/revenuedot/purchases-hybrid-common/issues"
   },
   "scripts": {
     "build": "rollup -c",
@@ -30,7 +30,7 @@
     "allchecks": "npm run format && npm run lint:fix && npm run api-test && npm run test"
   },
   "dependencies": {
-    "@revenuecat/purchases-js": "1.66.0"
+    "@revenuecat/purchases-js": "npm:@revenuedot/purchases-js@1.66.0"
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.42.3",

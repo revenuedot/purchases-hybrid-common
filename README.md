@@ -1,5 +1,11 @@
+<!-- revenuedot:banner:start -->
 > [!NOTE]
-> **RevenueDot fork.** This is [RevenueDot](https://github.com/revenuedot/revenuedot)'s MIT-licensed fork of RevenueCat's `purchases-hybrid-common`, kept in sync with upstream. It keeps the same API, so existing RevenueCat integrations keep working, and it works with the open-source RevenueDot server, self-hosted or in RevenueDot Cloud. **Status: pre-alpha.** RevenueDot builds of this SDK are not published to package registries yet; the text below is the upstream README. RevenueDot is not affiliated with RevenueCat, Inc.
+> **Fork of RevenueCat's MIT SDK, maintained by RevenueDot, not affiliated with RevenueCat.** It keeps the upstream public API (`Purchases.configure`, `Purchases.shared`, every class and method name), so app code and RevenueCat's guides work unchanged. It talks to [RevenueDot](https://github.com/revenuedot/revenuedot) at `https://api.revenuedot.app` by default (`setProxyURL` still points it at a self-hosted server) and verifies RevenueDot's response signatures. RevenueCat's copyright notice is kept in `LICENSE`. Patches: [scripts/forks](https://github.com/revenuedot/revenuedot/tree/main/scripts/forks). **Status: pre-alpha, not yet published to package registries.**
+>
+> **Install:** native pods `RevenueDotPurchasesHybridCommon`, Maven `app.revenuedot.purchases:purchases-hybrid-common`, npm `@revenuedot/purchases-typescript-internal`. Wrappers (React Native, Flutter, Capacitor, Unity, Cordova) pull these in for you.
+>
+> The upstream README follows, unchanged. Where it says RevenueCat's dashboard or API, use RevenueDot's.
+<!-- revenuedot:banner:end -->
 
 # purchases-hybrid-common
 
