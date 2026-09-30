@@ -117,7 +117,7 @@ jobs:
           set -euo pipefail
           # The yarn.lock predates the npm alias, so it cannot be frozen.
           yarn install --non-interactive
-          node -p "'bundled purchases-js ' + require('@revenuecat/purchases-js/package.json').name + '@' + require('@revenuecat/purchases-js/package.json').version"
+          node -p "const p=JSON.parse(require('fs').readFileSync('node_modules/@revenuecat/purchases-js/package.json'));'bundling '+p.name+'@'+p.version"
           yarn build
           yarn test --silent
           for f in dist/index.js dist/index.umd.js; do
