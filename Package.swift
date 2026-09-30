@@ -22,7 +22,7 @@ let package = Package(
             targets: ["PurchasesHybridCommonUI"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/RevenueCat/purchases-ios-spm", exact: "5.91.0"),
+        .package(url: "https://github.com/revenuedot/purchases-ios.git", exact: "5.91.0-revenuedot"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -30,14 +30,14 @@ let package = Package(
         .target(
             name: "PurchasesHybridCommon",
             dependencies: [
-                .product(name: "RevenueCat", package: "purchases-ios-spm"),
+                .product(name: "RevenueCat", package: "purchases-ios"),
             ],
             path: "ios/PurchasesHybridCommon/PurchasesHybridCommon"),
         .target(
             name: "PurchasesHybridCommonUI",
             dependencies: [
                 .target(name: "PurchasesHybridCommon"),
-                .product(name: "RevenueCatUI", package: "purchases-ios-spm"),
+                .product(name: "RevenueCatUI", package: "purchases-ios"),
             ],
             path: "ios/PurchasesHybridCommon/PurchasesHybridCommonUI"),
     ]

@@ -584,8 +584,8 @@ end
 
 def make_typescript_package_esm
   replace_text_in_files(
-    previous_text: "@revenuecat/purchases-typescript-internal",
-    new_text: "@revenuecat/purchases-typescript-internal-esm",
+    previous_text: "@revenuedot/purchases-typescript-internal",
+    new_text: "@revenuedot/purchases-typescript-internal-esm",
     paths_of_files_to_update: ["typescript/package.json"]
   )
   replace_text_in_files(
