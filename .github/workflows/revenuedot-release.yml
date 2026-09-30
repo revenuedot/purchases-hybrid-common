@@ -1,0 +1,156 @@
+# RevenueDot release: publishes the npm packages of purchases-hybrid-common with trusted publishing (OIDC, no token):
+#   @revenuedot/purchases-typescript-internal       typescript/ (CommonJS)
+#   @revenuedot/purchases-typescript-internal-esm   typescript/ rebuilt as ESNext (upstream's fastlane deploy_esm)
+#   @revenuedot/purchases-js-hybrid-mappings        purchases-js-hybrid-mappings/ (bundles @revenuedot/purchases-js)
+# A push of tag `<version>-revenuedot` publishes. A push to a `revenuedot/release-*` branch, or a manual run with
+# dry_run=true, builds, tests and runs `npm publish --dry-run`. Versions already on the registry are skipped, so
+# reruns are safe. The CocoaPods pods and Maven artifacts of this repo are released separately.
+# Fork pipeline: https://github.com/revenuedot/revenuedot/tree/main/scripts/forks
+name: RevenueDot release
+
+on:
+  push:
+    tags: ["*-revenuedot"]
+    branches: ["revenuedot/release-*"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build, test and run npm publish --dry-run only"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: revenuedot-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) || (github.event_name == 'push' && github.ref_type != 'tag') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: npm >= 11.5.1 (trusted publishing)
+        run: |
+          npm install -g npm@latest
+          npm --version
+          corepack enable
+
+      - name: Check the tag matches the package versions
+        run: |
+          set -euo pipefail
+          want=$(tr -d '[:space:]' < .version)
+          for dir in typescript purchases-js-hybrid-mappings; do
+            v=$(node -p "require('./$dir/package.json').version")
+            [ "$v" = "$want" ] || { echo "::error::$dir/package.json has $v, .version has $want"; exit 1; }
+          done
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            [ "${GITHUB_REF_NAME%-revenuedot}" = "$want" ] || { echo "::error::tag $GITHUB_REF_NAME expects version ${GITHUB_REF_NAME%-revenuedot}, .version has $want"; exit 1; }
+          elif [ "$DRY_RUN" != "true" ]; then
+            echo "::error::a real publish must run on a tag <version>-revenuedot (this run is on branch $GITHUB_REF_NAME)"; exit 1
+          fi
+          echo "version $want"
+
+      - name: "typescript: install, build, unit tests"
+        working-directory: typescript
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+          yarn test --silent
+
+      - name: "purchases-js-hybrid-mappings: resolve @revenuedot/purchases-js"
+        id: pjs
+        working-directory: purchases-js-hybrid-mappings
+        run: |
+          set -euo pipefail
+          spec=$(node -p "require('./package.json').dependencies['@revenuecat/purchases-js']")
+          case "$spec" in npm:@revenuedot/purchases-js@*) ;; *) echo "::error::unexpected purchases-js dependency $spec"; exit 1;; esac
+          v=${spec##*@}
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          if npm view "@revenuedot/purchases-js@$v" version >/dev/null 2>&1; then
+            echo "@revenuedot/purchases-js@$v is on npm"; echo "local=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ "$DRY_RUN" != "true" ]; then
+            echo "::error::@revenuedot/purchases-js@$v is not on npm. Publish it first (tag $v-revenuedot in revenuedot/purchases-js); this package bundles it and depends on it."; exit 1
+          fi
+          # Dry run only: build our purchases-js fork from its tag or release branch and install that tarball, so the
+          # bundle is built from the same code the published dependency will contain.
+          ref="$v-revenuedot"
+          git ls-remote --exit-code --tags https://github.com/revenuedot/purchases-js "refs/tags/$ref" >/dev/null || ref="revenuedot/release-$v"
+          echo "::warning::@revenuedot/purchases-js@$v is not on npm yet; dry run builds it from revenuedot/purchases-js $ref"
+          echo "local=true" >> "$GITHUB_OUTPUT"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: "purchases-js-hybrid-mappings: build @revenuedot/purchases-js from the fork (dry run only)"
+        if: steps.pjs.outputs.local == 'true'
+        env:
+          HUSKY: "0"
+        run: |
+          set -euo pipefail
+          git clone -q --depth 1 --branch "${{ steps.pjs.outputs.ref }}" https://github.com/revenuedot/purchases-js "$RUNNER_TEMP/purchases-js"
+          cd "$RUNNER_TEMP/purchases-js"
+          pnpm install --frozen-lockfile
+          pnpm run build
+          npm pack --pack-destination "$RUNNER_TEMP"
+          tgz=$(ls "$RUNNER_TEMP"/revenuedot-purchases-js-*.tgz)
+          cd "$GITHUB_WORKSPACE/purchases-js-hybrid-mappings"
+          # Point the dependency at the tarball for this run only; the publish step restores the declared alias.
+          cp package.json "$RUNNER_TEMP/mappings-package.json"
+          node -e 'const f="package.json",p=JSON.parse(require("fs").readFileSync(f));p.dependencies["@revenuecat/purchases-js"]="file:"+process.argv[1];require("fs").writeFileSync(f,JSON.stringify(p,null,2)+"\n")' "$tgz"
+
+      - name: "purchases-js-hybrid-mappings: install, build, unit tests"
+        working-directory: purchases-js-hybrid-mappings
+        run: |
+          set -euo pipefail
+          # The yarn.lock predates the npm alias, so it cannot be frozen.
+          yarn install --non-interactive
+          node -p "const p=JSON.parse(require('fs').readFileSync('node_modules/@revenuecat/purchases-js/package.json'));'bundling '+p.name+'@'+p.version"
+          yarn build
+          yarn test --silent
+          for f in dist/index.js dist/index.umd.js; do
+            grep -q 'api.revenuedot.app' "$f" || { echo "::error::$f does not contain api.revenuedot.app"; exit 1; }
+            if grep -Eq 'api\.revenuecat\.com|e\.revenue\.cat' "$f"; then echo "::error::$f contains a RevenueCat host"; exit 1; fi
+          done
+          if [ -f "$RUNNER_TEMP/mappings-package.json" ]; then cp "$RUNNER_TEMP/mappings-package.json" package.json; fi
+
+      - name: Publish (dependency order; skips versions already on npm)
+        run: |
+          set -euo pipefail
+          publish() {
+            local dir=$1 name version
+            name=$(node -p "require('./$dir/package.json').name")
+            version=$(node -p "require('./$dir/package.json').version")
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "$name@$version is already on npm, skipping"; return 0
+            fi
+            echo "== $name@$version"
+            if [ "$DRY_RUN" = "true" ]; then
+              (cd "$dir" && npm publish --provenance --access public --dry-run --ignore-scripts)
+            else
+              (cd "$dir" && npm publish --provenance --access public --ignore-scripts)
+            fi
+          }
+          publish typescript
+
+          # ESM flavour, as upstream's fastlane deploy_esm: rename the package and build ESNext modules.
+          sed -i 's#"@revenuedot/purchases-typescript-internal"#"@revenuedot/purchases-typescript-internal-esm"#' typescript/package.json
+          sed -i 's#"commonjs"#"esnext"#' typescript/tsconfig.json
+          grep -q '"@revenuedot/purchases-typescript-internal-esm"' typescript/package.json
+          grep -q '"module": "esnext"' typescript/tsconfig.json
+          (cd typescript && rm -rf dist && yarn build && grep -q '^export' dist/index.js)
+          publish typescript
+
+          publish purchases-js-hybrid-mappings
