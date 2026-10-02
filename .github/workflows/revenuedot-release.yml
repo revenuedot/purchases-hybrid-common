@@ -139,6 +139,9 @@ jobs:
             echo "== $name@$version"
             if [ "$DRY_RUN" = "true" ]; then
               (cd "$dir" && npm publish --provenance --access public --dry-run --ignore-scripts)
+              # A package that is not on npm yet cannot use trusted publishing (npm only accepts a trusted publisher
+              # on an existing package), so its first publish is manual: keep the exact tarball for that.
+              mkdir -p "$RUNNER_TEMP/tarballs" && (cd "$dir" && npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/tarballs")
             else
               (cd "$dir" && npm publish --provenance --access public --ignore-scripts)
             fi
@@ -154,3 +157,11 @@ jobs:
           publish typescript
 
           publish purchases-js-hybrid-mappings
+
+      - name: "Dry run only: upload the tarballs of packages not on npm yet (for their manual first publish)"
+        if: env.DRY_RUN == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-tarballs
+          path: ${{ runner.temp }}/tarballs/*.tgz
+          if-no-files-found: ignore
