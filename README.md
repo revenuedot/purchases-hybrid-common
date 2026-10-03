@@ -38,6 +38,14 @@ The fork already trusts RevenueDot's signing key, so no signature or verificatio
 - **Self-host for free, or use RevenueDot Cloud** free up to $10,000 a month of tracked revenue ([pricing](https://revenuedot.app/pricing)).
 - **The same REST API and webhook payloads** as RevenueCat, so your backend and integrations keep working ([API reference](https://revenuedot.app/docs/api)).
 
+## Use with your coding agent
+
+Coding agents can read this repository's docs and code on demand, so they use the right package and imports:
+
+- **Context7:** https://context7.com/revenuedot/purchases-hybrid-common
+- **DeepWiki:** https://deepwiki.com/revenuedot/purchases-hybrid-common
+- **GitMCP:** https://gitmcp.io/revenuedot/purchases-hybrid-common
+
 ## Links
 
 - **Docs for this SDK:** https://revenuedot.app/docs/sdks/hybrid-common

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "RevenueDot Purchases Hybrid Common",
+  "description": "Shared native and TypeScript layer under RevenueDot's React Native, Flutter, Capacitor, Unity and Cordova SDKs, forked from RevenueCat's MIT purchases-hybrid-common.",
+  "folders": [],
+  "excludeFolders": [
+    ".circleci",
+    ".github",
+    "fastlane",
+    ".revenuedot",
+    "scripts",
+    ".lefthook",
+    ".swiftpm"
+  ],
+  "excludeFiles": [
+    "CHANGELOG.md",
+    "CHANGELOG.latest.md",
+    "CHANGELOG-LATEST.md"
+  ],
+  "rules": [
+    "Do not install this package directly: install the RevenueDot React Native, Flutter, Capacitor, Unity or Cordova SDK, which pull it in.",
+    "Configure the wrapper SDK, not this layer: its `setProxyURL` and `configure` calls pass through to RevenueDot's native iOS and Android SDKs.",
+    "It publishes CocoaPods RevenueDotPurchasesHybridCommon and RevenueDotPurchasesHybridCommonUI, and Maven Central app.revenuedot.purchases:purchases-hybrid-common.",
+    "The npm packages are @revenuedot/purchases-typescript-internal, @revenuedot/purchases-typescript-internal-esm and @revenuedot/purchases-js-hybrid-mappings, installed through npm aliases by the wrappers.",
+    "RevenueDot Cloud (https://api.revenuedot.app) is the default API host; a self-hosted server is set with the wrapper SDK's `setProxyURL`."
+  ]
+}
