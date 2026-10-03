@@ -2,7 +2,7 @@
   "note": "Fork of RevenueCat's MIT SDK, maintained by RevenueDot, not affiliated with RevenueCat.",
   "pipeline": "https://github.com/revenuedot/revenuedot/tree/main/scripts/forks",
   "rules": "scripts/forks/rules/purchases-hybrid-common.json",
-  "rulesSha256": "18b87eacb23b567a65ce714fd94a34f19f50726efc5f3461c7848279e220beaa",
+  "rulesSha256": "16c16697ede62c5f8cbe45a476e2c9aa5412fcc4a928ec4a3d192706c2f35c0e",
   "upstream": {
     "repo": "https://github.com/RevenueCat/purchases-hybrid-common",
     "mergeBase": "420ac7394173868bede3ec10796addd316fc1be6"
